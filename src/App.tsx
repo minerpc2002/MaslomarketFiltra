@@ -322,7 +322,7 @@ export default function App() {
     }
 
     const query = searchMode === 'vin' 
-      ? `VIN: ${vin}` 
+      ? `VIN или Номер кузова (Frame No): ${vin}. Если это японский автомобиль (JDM), ищи строго по номеру кузова (например JZX100-0123456).` 
       : searchMode === 'part_number'
       ? `Номер детали (OEM или аналог): ${partNumber}. Найди кросс-номера для этого фильтра.`
       : `Марка: ${make}, Модель: ${model}, Год/Поколение: ${year}, Двигатель: ${engine}, Кузов: ${bodyType}`;
@@ -375,9 +375,12 @@ export default function App() {
               <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
             </motion.div>
             <div>
-              <h1 className="text-3xl font-black tracking-tighter text-white uppercase italic leading-none">
-                MASLO <span className="text-red-600">MARKET</span>
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tighter text-white uppercase italic leading-none">
+                  MASLO <span className="text-red-600">MARKET</span>
+                </h1>
+                <span className="px-2 py-0.5 bg-red-600 text-white text-[8px] font-black rounded-md uppercase tracking-widest">Beta</span>
+              </div>
               <div className="flex items-center gap-2 mt-1">
                 <Star className="w-3 h-3 text-red-600 fill-red-600" />
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">ЗНАК КАЧЕСТВА СССР</p>
@@ -415,8 +418,11 @@ export default function App() {
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {QUICK_CARS.map((group) => (
-                  <div key={group.category} className="ussr-panel p-6 rounded-[2rem]">
-                    <h3 className="text-[10px] font-black text-red-500 uppercase mb-5 tracking-widest">{group.category}</h3>
+                  <div key={group.category} className="ussr-panel p-6 rounded-[2rem] border-red-600/30">
+                    <div className="flex items-center justify-between mb-5">
+                      <h3 className="text-[10px] font-black text-red-500 uppercase tracking-widest">{group.category}</h3>
+                      <span className="text-[8px] font-black bg-red-600/20 text-red-500 px-2 py-0.5 rounded uppercase tracking-widest">Beta</span>
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {group.cars.map((car) => (
                         <motion.button
@@ -458,7 +464,7 @@ export default function App() {
                   }`}
                 >
                   <Hash className="w-4 h-4" />
-                  VIN Код
+                  VIN / Кузов
                 </button>
                 <button
                   onClick={() => { triggerHaptic('light'); setSearchMode('part_number'); }}
@@ -485,7 +491,7 @@ export default function App() {
                       value={vin}
                       onChange={(e) => setVin(e.target.value.toUpperCase())}
                       placeholder="ВВЕДИТЕ НОМЕР..."
-                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
+                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-500"
                     />
                   </div>
                 ) : searchMode === 'part_number' ? (
@@ -499,7 +505,7 @@ export default function App() {
                       value={partNumber}
                       onChange={(e) => setPartNumber(e.target.value.toUpperCase())}
                       placeholder="НАПРИМЕР: W610/3 ИЛИ 90915-10001"
-                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
+                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-500"
                     />
                   </div>
                 ) : (
@@ -563,8 +569,16 @@ export default function App() {
                     <div className="absolute top-0 right-0 p-6">
                       <ShieldCheck className="w-16 h-16 text-red-600/20" />
                     </div>
-                    <h2 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em] mb-4">Результат проверки</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-[10px] font-black text-red-500 uppercase tracking-[0.5em]">Результат проверки (Beta)</h2>
+                      <span className="px-2 py-0.5 bg-red-600/20 text-red-500 text-[8px] font-black rounded uppercase tracking-widest">Beta</span>
+                    </div>
                     <p className="text-4xl font-black text-white tracking-tighter uppercase italic">{result.vehicle}</p>
+                    <div className="mt-6 pt-6 border-t border-white/10">
+                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-relaxed">
+                        Внимание: Данные сформированы MASLO AI. Программа может ошибаться. Всегда проверяйте артикулы перед покупкой.
+                      </p>
+                    </div>
                   </motion.div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -630,17 +644,17 @@ export default function App() {
                 Стандарт
               </h3>
               <p className="text-xs font-bold leading-relaxed opacity-90 uppercase tracking-tight">
-                Все данные проходят проверку через нашу собственную нейронную сеть MASLO AI. Мы гарантируем точность подбора согласно заводским спецификациям.
+                Все данные проходят проверку через нашу собственную нейронную сеть MASLO AI (Beta). Мы гарантируем точность подбора согласно заводским спецификациям. Внимание: программа может ошибаться, всегда сверяйте артикулы перед покупкой.
               </p>
               <div className="mt-8 pt-8 border-t border-white/20">
                 <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] mb-3">
                   <span>Надежность</span>
-                  <span>100%</span>
+                  <span>99%</span>
                 </div>
                 <div className="w-full h-2 bg-black/20 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: '100%' }}
+                    animate={{ width: '99%' }}
                     transition={{ duration: 2 }}
                     className="h-full bg-white" 
                   />
@@ -739,8 +753,8 @@ const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }
             <div key={brand.label} className={`flex flex-col gap-2 p-4 rounded-2xl border ${brand.color} backdrop-blur-sm`}>
               <span className="text-[10px] font-black uppercase tracking-tighter">{brand.label}</span>
               <div className="flex flex-wrap gap-2">
-                {Array.isArray(brand.value) ? brand.value.map((val, i) => (
-                  <span key={i} className="font-mono font-bold text-base tracking-widest">{val}</span>
+                {Array.isArray(brand.value) ? brand.value.map((val) => (
+                  <span key={val} className="font-mono font-bold text-base tracking-widest">{val}</span>
                 )) : (
                   <span className="font-mono font-bold text-base tracking-widest">{brand.value}</span>
                 )}
