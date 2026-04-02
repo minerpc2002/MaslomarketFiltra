@@ -56,8 +56,10 @@ const getAI = () => {
 
 const MODELS = [
   'gemini-3.1-pro-preview',
+  'gemini-3.1-flash-preview',
+  'gemini-3.1-flash-lite-preview',
   'gemini-3-flash-preview',
-  'gemini-3.1-flash-lite-preview'
+  'gemini-2.5-flash'
 ];
 
 type FilterBrand = {
@@ -246,7 +248,7 @@ export default function App() {
     setError(null);
   };
 
-  const performSearch = async (ai: GoogleGenAI, query: string, modelIndex: number): Promise<SearchResult> => {
+  const performSearch = async (ai: GoogleGenAI, query: string, modelId: string): Promise<SearchResult> => {
     const filterSchema: Schema = {
       type: Type.OBJECT,
       properties: {
@@ -278,18 +280,18 @@ export default function App() {
     };
 
     const response = await ai.models.generateContent({
-      model: MODELS[modelIndex],
+      model: modelId,
       contents: `Ты строгая база данных кросс-номеров автозапчастей. Твоя задача - найти OEM НОМЕРА и артикулы аналогов для: ${query}. 
       
       СТРОГИЙ АЛГОРИТМ ПОИСКА ЗАВИСИТ ОТ РЕГИОНА АВТОМОБИЛЯ:
 
       ДЛЯ ЯПОНСКИХ АВТОМОБИЛЕЙ (Toyota, Honda, Nissan, Mazda, Subaru, Mitsubishi, Daihatsu, Lexus, Infiniti, Suzuki и др.):
-      1. БАЗОВЫЙ КАТАЛОГ: Ищи кросс-номера и аналоги ТОЛЬКО опираясь на каталог JS ASAKASHI.
-      2. АЛГОРИТМ: Найди OEM -> Найди номер JS Asakashi -> По номеру JS Asakashi подбирай остальные аналоги (VIC, MANN, FILTRON). Если номера JS Asakashi нет, поиск аналогов прекращается.
+      1. БАЗОВЫЙ КАТАЛОГ: Ищи кросс-номера и аналоги в первую очередь опираясь на каталог JS ASAKASHI.
+      2. АЛГОРИТМ: Найди OEM -> Найди номер JS Asakashi -> По номеру JS Asakashi подбирай остальные аналоги (VIC, MANN, FILTRON). Если номера JS Asakashi нет, попробуй найти по VIC или MANN, но обязательно проверь совместимость с OEM.
 
       ДЛЯ ЕВРОПЕЙСКИХ АВТОМОБИЛЕЙ (VW, Skoda, BMW, Mercedes, Audi, Renault, Peugeot и др.):
-      1. БАЗОВЫЙ КАТАЛОГ: За основу бери ТОЛЬКО каталог MANN-FILTER.
-      2. АЛГОРИТМ: Найди OEM -> Найди номер MANN-FILTER -> По номеру MANN-FILTER ищи остальные аналоги (FILTRON, JS Asakashi и др.). Если номера MANN нет, поиск аналогов прекращается.
+      1. БАЗОВЫЙ КАТАЛОГ: За основу бери каталог MANN-FILTER.
+      2. АЛГОРИТМ: Найди OEM -> Найди номер MANN-FILTER -> По номеру MANN-FILTER ищи остальные аналоги (FILTRON, JS Asakashi и др.). Если номера MANN нет, попробуй другие каталоги, но проверь совместимость.
 
       ДЛЯ ОСТАЛЬНЫХ (Корея, Китай, США):
       Используй оба каталога (MANN и JS Asakashi) для кроссировки с OEM.
@@ -303,7 +305,7 @@ export default function App() {
         responseMimeType: 'application/json',
         responseSchema: responseSchema,
         temperature: 0.1,
-        tools: modelIndex < 2 ? [{ googleSearch: {} }] : [],
+        tools: [{ googleSearch: {} }],
       }
     });
 
@@ -344,18 +346,19 @@ export default function App() {
     while (currentModelIdx < MODELS.length && !success) {
       try {
         setActiveModelIndex(currentModelIdx);
-        const data = await performSearch(ai, query, currentModelIdx);
+        const data = await performSearch(ai, query, MODELS[currentModelIdx]);
         if (data.error) {
           setError(data.error);
           triggerHapticNotification('error');
+          success = true; // Stop loop if it's a logical error from the model
         } else {
           setResult(data);
           saveToHistory(data);
           triggerHapticNotification('success');
+          success = true;
         }
-        success = true;
       } catch (err: any) {
-        console.warn(`Model ${currentModelIdx} failed:`, err);
+        console.warn(`Model ${MODELS[currentModelIdx]} failed:`, err);
         currentModelIdx++;
         if (currentModelIdx >= MODELS.length) {
           setError('Связь с центром управления прервана. Попробуйте позже.');
