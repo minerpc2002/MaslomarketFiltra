@@ -1,0 +1,5 @@
+{
+  "name": "Auto Filter Finder",
+  "description": "Поиск автомобильных фильтров (MANN, VIC, FILTRON) по VIN коду и модели авто.",
+  "requestFramePermissions": []
+}
