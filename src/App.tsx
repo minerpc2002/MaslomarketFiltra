@@ -85,6 +85,9 @@ const QUICK_CARS = [
     { label: 'Toyota Camry XV70', make: 'Toyota', model: 'Camry', year: '2017-2024 (XV70)', engine: '2.5 2AR-FE', bodyType: 'Седан' },
     { label: 'Honda Civic X', make: 'Honda', model: 'Civic', year: '2015-2021 (X)', engine: '1.5 Turbo L15B7', bodyType: 'Хэтчбек' },
     { label: 'Nissan Qashqai J11', make: 'Nissan', model: 'Qashqai', year: '2013-2021 (J11)', engine: '2.0 MR20DD', bodyType: 'Кроссовер' },
+    { label: 'Mitsubishi Outlander III', make: 'Mitsubishi', model: 'Outlander', year: '2012-2021 (Gen 3)', engine: '2.4 4B12', bodyType: 'Кроссовер' },
+    { label: 'Mazda CX-5 KF', make: 'Mazda', model: 'CX-5', year: '2017-2026 (KF)', engine: '2.5 SkyActiv-G', bodyType: 'Кроссовер' },
+    { label: 'Subaru Forester SK', make: 'Subaru', model: 'Forester', year: '2018-2026 (SK)', engine: '2.5 FB25', bodyType: 'Кроссовер' },
   ]},
   { category: 'Европейские', cars: [
     { label: 'VW Polo Sedan', make: 'Volkswagen', model: 'Polo', year: '2010-2020 (Sedan / 6R/6C)', engine: '1.6 CFNA', bodyType: 'Седан' },

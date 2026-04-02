@@ -25,6 +25,21 @@ export const CAR_DB: Record<string, Record<string, { years: string[], bodies: st
       years: ["2023-2026 (250)", "2009-2023 (150)", "2002-2009 (120)", "1996-2002 (90)"],
       bodies: ["Внедорожник"],
       engines: ["2.7 2TR-FE", "2.8 Дизель 1GD-FTV", "3.0 Дизель 1KD-FTV", "4.0 1GR-FE", "3.4 5VZ-FE"]
+    },
+    "Hilux": {
+      years: ["2015-2026 (AN120/AN130)", "2004-2015 (AN10/AN20/AN30)"],
+      bodies: ["Пикап"],
+      engines: ["2.4 Дизель 2GD-FTV", "2.8 Дизель 1GD-FTV", "2.7 2TR-FE", "2.5 Дизель 2KD-FTV"]
+    },
+    "Prius": {
+      years: ["2022-2026 (XW60)", "2015-2022 (XW50)", "2009-2015 (XW30)", "2003-2009 (XW20)"],
+      bodies: ["Хэтчбек", "Лифтбек"],
+      engines: ["1.8 Гибрид 2ZR-FXE", "2.0 Гибрид M20A-FXS", "1.5 Гибрид 1NZ-FXE"]
+    },
+    "Mark II / Chaser": {
+      years: ["1996-2001 (X100)", "1992-1996 (X90)", "1988-1992 (X80)"],
+      bodies: ["Седан"],
+      engines: ["2.0 1G-FE", "2.5 1JZ-GE", "2.5 Turbo 1JZ-GTE", "3.0 2JZ-GE"]
     }
   },
   "Honda": {
@@ -42,6 +57,11 @@ export const CAR_DB: Record<string, Record<string, { years: string[], bodies: st
       years: ["2022-2026 (VI)", "2016-2022 (V)", "2011-2016 (IV)", "2006-2011 (III)", "2001-2006 (II)", "1995-2001 (I)"],
       bodies: ["Кроссовер"],
       engines: ["1.5 Turbo", "2.0 Гибрид", "2.0 R20A", "2.4 K24A", "2.2 Дизель"]
+    },
+    "Fit / Jazz": {
+      years: ["2020-2026 (GR/GS)", "2013-2020 (GK/GP)", "2007-2013 (GE/GG)", "2001-2007 (GD)"],
+      bodies: ["Хэтчбек"],
+      engines: ["1.3 L13B", "1.5 L15B", "1.5 Гибрид i-MMD", "1.2 L12A"]
     }
   },
   "Nissan": {
@@ -54,6 +74,128 @@ export const CAR_DB: Record<string, Record<string, { years: string[], bodies: st
       years: ["2021-2026 (T33)", "2013-2021 (T32)", "2007-2013 (T31)", "2000-2007 (T30)"],
       bodies: ["Кроссовер"],
       engines: ["1.5 VC-Turbo", "2.0 MR20DD", "2.5 QR25DE", "1.6 dCi", "2.0 dCi"]
+    },
+    "Patrol": {
+      years: ["2010-2026 (Y62)", "1997-2010 (Y61)", "1987-1997 (Y60)"],
+      bodies: ["Внедорожник"],
+      engines: ["5.6 V8 VK56VD", "3.0 Дизель ZD30DDTi", "4.2 Дизель TD42", "4.8 TB48DE"]
+    },
+    "Juke": {
+      years: ["2019-2026 (F16)", "2010-2019 (F15)"],
+      bodies: ["Кроссовер"],
+      engines: ["1.0 DIG-T", "1.6 HR16DE", "1.6 Turbo MR16DDT", "1.5 dCi"]
+    },
+    "Teana": {
+      years: ["2013-2020 (L33)", "2008-2013 (J32)", "2003-2008 (J31)"],
+      bodies: ["Седан"],
+      engines: ["2.0 MR20DE", "2.5 VQ25DE", "3.5 VQ35DE", "2.5 QR25DE"]
+    }
+  },
+  "Mitsubishi": {
+    "Outlander": {
+      years: ["2021-2026 (Gen 4)", "2012-2021 (Gen 3)", "2005-2012 (XL / Gen 2)", "2001-2006 (Gen 1)"],
+      bodies: ["Кроссовер"],
+      engines: ["2.0 4B11", "2.4 4B12", "3.0 V6 6B31", "2.0 PHEV", "2.2 Дизель"]
+    },
+    "Pajero": {
+      years: ["2006-2021 (IV)", "1999-2006 (III)", "1991-1999 (II)"],
+      bodies: ["Внедорожник"],
+      engines: ["3.0 V6 6G72", "3.8 V6 6G75", "3.2 Дизель 4M41", "3.5 V6 6G74"]
+    },
+    "Lancer": {
+      years: ["2007-2017 (X)", "2000-2007 (IX)", "1995-2000 (VIII)"],
+      bodies: ["Седан", "Хэтчбек"],
+      engines: ["1.5 4A91", "1.8 4B10", "2.0 4B11", "1.6 4G18", "2.0 4G63"]
+    },
+    "ASX": {
+      years: ["2010-2026"],
+      bodies: ["Кроссовер"],
+      engines: ["1.6 4A92", "1.8 4B10", "2.0 4B11"]
+    }
+  },
+  "Subaru": {
+    "Forester": {
+      years: ["2018-2026 (SK)", "2012-2018 (SJ)", "2007-2012 (SH)", "2002-2007 (SG)", "1997-2002 (SF)"],
+      bodies: ["Кроссовер"],
+      engines: ["2.0 FB20", "2.5 FB25", "2.0 Turbo FA20DIT", "2.0 EJ20", "2.5 EJ25"]
+    },
+    "Impreza": {
+      years: ["2023-2026 (GU)", "2016-2023 (GT/GK)", "2011-2016 (GP/GJ)", "2007-2011 (GH/GE)", "2000-2007 (GD/GG)"],
+      bodies: ["Хэтчбек", "Седан"],
+      engines: ["1.6 FB16", "2.0 FB20", "2.0 EJ20", "2.5 Turbo (WRX STI)"]
+    },
+    "Outback": {
+      years: ["2020-2026 (BT)", "2014-2020 (BS)", "2009-2014 (BR)", "2003-2009 (BP)"],
+      bodies: ["Универсал"],
+      engines: ["2.5 FB25", "2.4 Turbo FA24", "3.6 EZ36", "2.0 Дизель EE20"]
+    }
+  },
+  "Suzuki": {
+    "Grand Vitara": {
+      years: ["2005-2015 (JT)", "1998-2005 (FT/GT)"],
+      bodies: ["Внедорожник 5 дв.", "Внедорожник 3 дв."],
+      engines: ["2.0 J20A", "2.4 J24B", "1.6 M16A", "2.7 V6 H27A"]
+    },
+    "Jimny": {
+      years: ["2018-2026 (JB64/JB74)", "1998-2018 (JB23/JB33/JB43)"],
+      bodies: ["Внедорожник"],
+      engines: ["1.5 K15B", "0.6 Turbo R06A", "1.3 M13A"]
+    },
+    "Swift": {
+      years: ["2023-2026", "2017-2023", "2010-2017", "2004-2010"],
+      bodies: ["Хэтчбек"],
+      engines: ["1.2 K12D", "1.4 Turbo K14C", "1.3 M13A", "1.5 M15A"]
+    }
+  },
+  "Lexus": {
+    "RX": {
+      years: ["2022-2026 (ALA10)", "2015-2022 (AL20)", "2008-2015 (AL10)", "2003-2008 (XU30)"],
+      bodies: ["Кроссовер"],
+      engines: ["2.4 Turbo T24A-FTS", "2.5 Гибрид A25A-FXS", "3.5 V6 2GR-FKS", "2.0 Turbo 8AR-FTS", "3.5 V6 2GR-FE", "3.0 V6 1MZ-FE"]
+    },
+    "NX": {
+      years: ["2021-2026 (AZ20)", "2014-2021 (AZ10)"],
+      bodies: ["Кроссовер"],
+      engines: ["2.5 A25A-FKS", "2.5 Гибрид A25A-FXS", "2.0 Turbo 8AR-FTS", "2.0 3ZR-FAE"]
+    },
+    "LX": {
+      years: ["2021-2026 (600/500d)", "2007-2021 (570/450d)", "1998-2007 (470)"],
+      bodies: ["Внедорожник"],
+      engines: ["3.4 V6 V35A-FTS", "3.3 Дизель F33A-FTV", "5.7 V8 3UR-FE", "4.5 Дизель 1VD-FTV", "4.7 V8 2UZ-FE"]
+    },
+    "IS": {
+      years: ["2013-2026 (XE30)", "2005-2013 (XE20)", "1999-2005 (XE10)"],
+      bodies: ["Седан"],
+      engines: ["2.0 Turbo 8AR-FTS", "2.5 V6 4GR-FSE", "3.5 V6 2GR-FSE", "2.5 2JZ-GE"]
+    },
+    "ES": {
+      years: ["2018-2026 (XZ10)", "2012-2018 (XV60)", "2006-2012 (XV40)"],
+      bodies: ["Седан"],
+      engines: ["2.5 A25A-FKS", "3.5 2GR-FKS", "2.5 2AR-FE", "3.5 2GR-FE"]
+    }
+  },
+  "Acura": {
+    "MDX": {
+      years: ["2021-2026 (YD4)", "2013-2020 (YD3)", "2006-2013 (YD2)"],
+      bodies: ["Кроссовер"],
+      engines: ["3.5 V6 J35Y", "3.0 V6 Turbo", "3.7 V6 J37A"]
+    },
+    "RDX": {
+      years: ["2018-2026 (TC1/TC2)", "2012-2018 (TB3/TB4)"],
+      bodies: ["Кроссовер"],
+      engines: ["2.0 Turbo K20C4", "3.5 V6 J35Z"]
+    }
+  },
+  "Infiniti": {
+    "QX70 / FX": {
+      years: ["2013-2017 (QX70)", "2008-2013 (FX S51)", "2002-2008 (FX S50)"],
+      bodies: ["Кроссовер"],
+      engines: ["3.7 VQ37VHR", "5.0 VK50VE", "3.0 Дизель V9X", "3.5 VQ35DE", "4.5 VK45DE"]
+    },
+    "QX80 / QX56": {
+      years: ["2013-2026 (QX80)", "2010-2013 (QX56 Z62)", "2004-2010 (QX56 JA60)"],
+      bodies: ["Внедорожник"],
+      engines: ["5.6 V8 VK56VD", "5.6 V8 VK56DE"]
     }
   },
   "Daihatsu": {
