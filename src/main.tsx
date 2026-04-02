@@ -1,15 +1,12 @@
-import {StrictMode, Component, ReactNode} from 'react';
+import React, {StrictMode, Component, ReactNode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
-class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: {children: ReactNode}) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+class ErrorBoundary extends React.Component<any, any> {
+  state = { hasError: false, error: null };
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
   }
 
@@ -19,13 +16,13 @@ class ErrorBoundary extends Component<{children: ReactNode}, {hasError: boolean,
         <div style={{ padding: '20px', color: 'white', background: '#05070a', height: '100vh', fontFamily: 'sans-serif' }}>
           <h1 style={{ color: '#ef4444' }}>Критическая ошибка запуска</h1>
           <pre style={{ background: 'rgba(255,255,255,0.1)', padding: '15px', borderRadius: '10px', overflow: 'auto' }}>
-            {this.state.error?.message}
+            {(this.state.error as any)?.message}
           </pre>
           <p>Проверьте переменные окружения (GEMINI_API_KEY) в настройках Vercel.</p>
         </div>
       );
     }
-    return this.props.children;
+    return (this as any).props.children;
   }
 }
 

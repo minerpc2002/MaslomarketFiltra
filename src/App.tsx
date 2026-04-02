@@ -65,6 +65,7 @@ type FilterBrand = {
   mann: string[] | null;
   vic: string[] | null;
   filtron: string[] | null;
+  js_asakashi: string[] | null;
 };
 
 type SearchResult = {
@@ -249,7 +250,8 @@ export default function App() {
         oem: { type: Type.STRING, description: "Оригинальный OEM номер запчасти" },
         mann: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов MANN-FILTER" },
         vic: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов VIC" },
-        filtron: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов FILTRON" }
+        filtron: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов FILTRON" },
+        js_asakashi: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов JS Asakashi" }
       },
       required: ["oem"]
     };
@@ -274,11 +276,17 @@ export default function App() {
 
     const response = await ai.models.generateContent({
       model: MODELS[modelIndex],
-      contents: `Ты эксперт ГОСТ по подбору автозапчастей. Найди OEM НОМЕРА и артикулы аналогов (MANN-FILTER, VIC, FILTRON) для: ${query}. 
-      ВАЖНО: 
+      contents: `Ты эксперт ГОСТ по подбору автозапчастей. Найди OEM НОМЕРА и артикулы аналогов (VIC, MANN-FILTER, JS Asakashi, FILTRON) для: ${query}. 
+      
+      СТРОГИЙ АЛГОРИТМ ПОИСКА:
+      1. ПРИОРИТЕТ: Сначала проверь официальные каталоги VIC, MANN-FILTER и JS Asakashi. Это основные источники.
+      2. ВТОРИЧНО: Затем ищи аналоги по другим базам (например, FILTRON).
+      3. ВЕРИФИКАЦИЯ: ОБЯЗАТЕЛЬНО сверяй кросс-номера между брендами и OEM. Если VIC говорит один номер, а MANN другой для того же OEM - проверь еще раз. Не выдавай фильтр, если не уверен в кросс-номере на 100%.
+      
+      ПРАВИЛА ВЫВОДА: 
       1. Обязательно укажи OEM номер.
-      2. Если для одной компании (например MANN) есть несколько подходящих аналогов, перечисли их ВСЕ в массиве.
-      3. Выдавай данные ТОЛЬКО если найден хотя бы один аналог (MANN, VIC или FILTRON). Если аналогов нет, верни null для этого типа фильтра.
+      2. Если для одной компании (например MANN или VIC) есть несколько подходящих аналогов, перечисли их ВСЕ в массиве.
+      3. Выдавай данные ТОЛЬКО если найден хотя бы один аналог. Если аналогов нет, верни null для этого типа фильтра.
       4. Для JDM авто проверяй кросс-номера максимально тщательно.`,
       config: {
         responseMimeType: 'application/json',
@@ -346,120 +354,6 @@ export default function App() {
     }
     setIsLoading(false);
   };
-
-  const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }) => {
-    if (!data) return null;
-    const hasAnalogs = data.mann || data.vic || data.filtron;
-    if (!hasAnalogs) return null;
-
-    return (
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 hover:border-red-500/30 transition-all duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]"
-      >
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
-          <Star className="w-12 h-12 text-red-600 fill-red-600" />
-        </div>
-
-        <h3 className="font-black text-white flex items-center gap-3 mb-6 uppercase tracking-widest text-sm">
-          <div className="p-2 bg-red-600/20 rounded-xl border border-red-500/30">
-            <Filter className="w-4 h-4 text-red-500" />
-          </div>
-          {title}
-        </h3>
-
-        <div className="space-y-4">
-          <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
-            <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Оригинал (OEM)</span>
-            <span className="font-mono font-bold text-lg text-white tracking-widest">{data.oem || 'Н/Д'}</span>
-          </div>
-
-          <div className="grid grid-cols-1 gap-2">
-            {[
-              { label: 'MANN-FILTER', value: data.mann, color: 'border-yellow-500/20 text-yellow-500 bg-yellow-500/5' },
-              { label: 'VIC', value: data.vic, color: 'border-red-500/20 text-red-500 bg-red-500/5' },
-              { label: 'FILTRON', value: data.filtron, color: 'border-orange-500/20 text-orange-500 bg-orange-500/5' }
-            ].map((brand) => brand.value && (
-              <div key={brand.label} className={`flex flex-col gap-2 p-4 rounded-2xl border ${brand.color} backdrop-blur-sm`}>
-                <span className="text-[10px] font-black uppercase tracking-tighter">{brand.label}</span>
-                <div className="flex flex-wrap gap-2">
-                  {Array.isArray(brand.value) ? brand.value.map((val, i) => (
-                    <span key={i} className="font-mono font-bold text-base tracking-widest">{val}</span>
-                  )) : (
-                    <span className="font-mono font-bold text-base tracking-widest">{brand.value}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
-
-  const AutocompleteInput = ({ 
-    id, label, value, onChange, options, placeholder 
-  }: { 
-    id: string, label: string, value: string, onChange: (val: string) => void, options: string[], placeholder: string 
-  }) => (
-    <div className="relative">
-      <label htmlFor={id} className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
-        {label}
-      </label>
-      <div className="relative">
-        <input
-          type="text"
-          id={id}
-          list={`${id}-list`}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-          autoComplete="off"
-        />
-        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
-      </div>
-      <datalist id={`${id}-list`}>
-        {options.map(opt => <option key={opt} value={opt} />)}
-      </datalist>
-    </div>
-  );
-
-  const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-          />
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 p-6">
-              <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
-              <Star className="w-6 h-6 text-red-600 fill-red-600" />
-              {title}
-            </h2>
-            <div className="text-slate-300 space-y-4 text-sm leading-relaxed">
-              {children}
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-  );
 
   return (
     <div className="min-h-screen bg-[#05070a] text-slate-300 selection:bg-red-500/30 font-sans mosaic-pattern">
@@ -580,54 +474,37 @@ export default function App() {
               </div>
 
               <form id="main-search-form" onSubmit={handleSearch} className="p-10 relative z-10">
-                <AnimatePresence mode="wait">
-                  {searchMode === 'vin' ? (
-                    <motion.div 
-                      key="vin-form"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-10"
-                    >
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-1">
-                        Номер кузова или VIN
-                      </label>
-                      <input
-                        type="text"
-                        value={vin}
-                        onChange={(e) => setVin(e.target.value.toUpperCase())}
-                        placeholder="ВВЕДИТЕ НОМЕР..."
-                        className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
-                      />
-                    </motion.div>
-                  ) : searchMode === 'part_number' ? (
-                    <motion.div 
-                      key="part-form"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-10"
-                    >
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-1">
-                        Артикул фильтра или OEM номер
-                      </label>
-                      <input
-                        type="text"
-                        value={partNumber}
-                        onChange={(e) => setPartNumber(e.target.value.toUpperCase())}
-                        placeholder="НАПРИМЕР: W610/3 ИЛИ 90915-10001"
-                        className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
-                      />
-                    </motion.div>
-                  ) : (
-                    <motion.div 
-                      key="model-form"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      className="mb-10 space-y-8"
-                    >
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {searchMode === 'vin' ? (
+                  <div className="mb-10">
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-1">
+                      Номер кузова или VIN
+                    </label>
+                    <input
+                      key="vin-input"
+                      type="text"
+                      value={vin}
+                      onChange={(e) => setVin(e.target.value.toUpperCase())}
+                      placeholder="ВВЕДИТЕ НОМЕР..."
+                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
+                    />
+                  </div>
+                ) : searchMode === 'part_number' ? (
+                  <div className="mb-10">
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4 ml-1">
+                      Артикул фильтра или OEM номер
+                    </label>
+                    <input
+                      key="part-input"
+                      type="text"
+                      value={partNumber}
+                      onChange={(e) => setPartNumber(e.target.value.toUpperCase())}
+                      placeholder="НАПРИМЕР: W610/3 ИЛИ 90915-10001"
+                      className="w-full px-8 py-6 rounded-3xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-mono text-2xl tracking-[0.2em] uppercase placeholder:text-slate-800"
+                    />
+                  </div>
+                ) : (
+                  <div className="mb-10 space-y-8">
+                      <div key="model-inputs-grid" className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="space-y-8">
                           <AutocompleteInput id="make" label="Марка" value={make} onChange={setMake} options={makeOptions} placeholder="TOYOTA" />
                           <AutocompleteInput id="model" label="Модель" value={model} onChange={setModel} options={modelOptions} placeholder="CAMRY" />
@@ -638,9 +515,8 @@ export default function App() {
                           <AutocompleteInput id="engine" label="Двигатель" value={engine} onChange={setEngine} options={engineOptions} placeholder="2.5 2AR-FE" />
                         </div>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  </div>
+                )}
 
                 <motion.button
                   id="main-submit-btn"
@@ -776,6 +652,26 @@ export default function App() {
         </div>
       </main>
 
+      <footer className="max-w-6xl mx-auto px-6 py-12 border-t border-white/5">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 opacity-40">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-white/10">
+              <ShieldCheck className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-white">MASLO MARKET</p>
+              <p className="text-[8px] font-bold uppercase tracking-tighter">© 2026 Все права защищены</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-8 text-[9px] font-black uppercase tracking-[0.2em]">
+            <button onClick={() => setShowAbout(true)} className="hover:text-red-500 transition-colors">О сервисе</button>
+            <button onClick={() => setShowHowItWorks(true)} className="hover:text-red-500 transition-colors">Технологии</button>
+            <span className="text-slate-700">|</span>
+            <span className="text-red-600 italic">Сделано в СССР</span>
+          </div>
+        </div>
+      </footer>
+
       <Modal isOpen={showAbout} onClose={() => setShowAbout(false)} title="О нас">
         <p>
           <strong>MASLO MARKET</strong> — это передовой сервис по подбору автомобильных расходных материалов, объединяющий традиции качества и современные технологии.
@@ -804,6 +700,122 @@ export default function App() {
     </div>
   );
 }
+
+const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }) => {
+  if (!data) return null;
+  const hasAnalogs = data.mann || data.vic || data.filtron || data.js_asakashi;
+  if (!hasAnalogs) return null;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="group relative overflow-hidden bg-slate-900/40 backdrop-blur-2xl p-6 rounded-3xl border border-white/10 hover:border-red-500/30 transition-all duration-500 shadow-[0_8px_32px_0_rgba(0,0,0,0.8)]"
+    >
+      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-30 transition-opacity">
+        <Star className="w-12 h-12 text-red-600 fill-red-600" />
+      </div>
+
+      <h3 className="font-black text-white flex items-center gap-3 mb-6 uppercase tracking-widest text-sm">
+        <div className="p-2 bg-red-600/20 rounded-xl border border-red-500/30">
+          <Filter className="w-4 h-4 text-red-500" />
+        </div>
+        {title}
+      </h3>
+
+      <div className="space-y-4">
+        <div className="p-4 bg-white/5 rounded-2xl border border-white/5">
+          <span className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Оригинал (OEM)</span>
+          <span className="font-mono font-bold text-lg text-white tracking-widest">{data.oem || 'Н/Д'}</span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2">
+          {[
+            { label: 'VIC', value: data.vic, color: 'border-red-500/20 text-red-500 bg-red-500/5' },
+            { label: 'MANN-FILTER', value: data.mann, color: 'border-yellow-500/20 text-yellow-500 bg-yellow-500/5' },
+            { label: 'JS Asakashi', value: data.js_asakashi, color: 'border-blue-500/20 text-blue-500 bg-blue-500/5' },
+            { label: 'FILTRON', value: data.filtron, color: 'border-orange-500/20 text-orange-500 bg-orange-500/5' }
+          ].map((brand) => brand.value && brand.value.length > 0 && (
+            <div key={brand.label} className={`flex flex-col gap-2 p-4 rounded-2xl border ${brand.color} backdrop-blur-sm`}>
+              <span className="text-[10px] font-black uppercase tracking-tighter">{brand.label}</span>
+              <div className="flex flex-wrap gap-2">
+                {Array.isArray(brand.value) ? brand.value.map((val, i) => (
+                  <span key={i} className="font-mono font-bold text-base tracking-widest">{val}</span>
+                )) : (
+                  <span className="font-mono font-bold text-base tracking-widest">{brand.value}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const AutocompleteInput = ({ 
+  id, label, value, onChange, options, placeholder 
+}: { 
+  id: string, label: string, value: string, onChange: (val: string) => void, options: string[], placeholder: string 
+}) => (
+  <div className="relative">
+    <label htmlFor={id} className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
+      {label}
+    </label>
+    <div className="relative">
+      <input
+        key={`${id}-input`}
+        type="text"
+        id={id}
+        list={`${id}-list`}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-bold placeholder:text-slate-600"
+        autoComplete="off"
+      />
+      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+    </div>
+    <datalist id={`${id}-list`}>
+      {options.map(opt => <option key={opt} value={opt} />)}
+    </datalist>
+  </div>
+);
+
+const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => (
+  <AnimatePresence>
+    {isOpen && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          className="relative w-full max-w-2xl bg-slate-900 border border-white/10 rounded-[2.5rem] p-10 shadow-2xl overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-6">
+            <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+          <h2 className="text-2xl font-black text-white uppercase italic mb-6 flex items-center gap-3">
+            <Star className="w-6 h-6 text-red-600 fill-red-600" />
+            {title}
+          </h2>
+          <div className="text-slate-300 space-y-4 text-sm leading-relaxed">
+            {children}
+          </div>
+        </motion.div>
+      </div>
+    )}
+  </AnimatePresence>
+);
 
 
 
