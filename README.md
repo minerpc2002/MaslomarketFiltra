@@ -1,20 +1,40 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# MASLO MARKET - Auto Filter Finder AI
 
-# Run and deploy your AI Studio app
+Modern auto filter finder application with a dark "liquid glass" theme and USSR-style accents. Optimized for Telegram Mini App.
 
-This contains everything you need to run your app locally.
+## Deployment on Vercel
 
-View your app in AI Studio: https://ai.studio/apps/9c49bded-9201-4a7c-b95e-5501561bbac1
+To deploy this application on Vercel, follow these steps:
 
-## Run Locally
+1.  **Push to Git:** Push your code to a GitHub, GitLab, or Bitbucket repository.
+2.  **Import to Vercel:** Go to [Vercel.com](https://vercel.com/) and import your repository.
+3.  **Configure Build Settings:**
+    *   **Framework Preset:** Vite
+    *   **Build Command:** `npm run build`
+    *   **Output Directory:** `dist`
+4.  **Set Environment Variables:**
+    *   In the Vercel project settings, go to **Environment Variables**.
+    *   Add a new variable:
+        *   **Key:** `GEMINI_API_KEY`
+        *   **Value:** (Your Google Gemini API Key)
+5.  **Deploy:** Click **Deploy**.
 
-**Prerequisites:**  Node.js
+## Features
 
+*   **AI-Powered Search:** Uses Google Gemini models to find accurate filter information.
+*   **Multi-Model Fallback:** Automatically switches between Gemini 3.1 Pro, Flash, and Flash Lite to ensure reliability.
+*   **Search Modes:**
+    *   **Catalog:** Search by vehicle make, model, year, engine, and body type.
+    *   **VIN:** Search by vehicle identification number.
+    *   **Part Number:** Search by OEM or analog part numbers to find cross-references.
+*   **Telegram Mini App Integration:** Optimized for Telegram with haptic feedback and native UI elements.
+*   **Modern UI:** Dark "liquid glass" theme with USSR industrial aesthetic.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+The application will be available at `http://localhost:3000`.
