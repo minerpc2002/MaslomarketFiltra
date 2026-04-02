@@ -46,7 +46,13 @@ declare global {
   }
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getAI = () => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error('API ключ не найден. Пожалуйста, настройте GEMINI_API_KEY в переменных окружения Vercel.');
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 const MODELS = [
   'gemini-3.1-pro-preview',
@@ -120,30 +126,38 @@ export default function App() {
       tg.setBackgroundColor('#05070a');
 
       // Setup MainButton
-      tg.MainButton.setText('НАЧАТЬ ПОИСК');
-      tg.MainButton.color = '#dc2626'; // red-600
-      tg.MainButton.textColor = '#ffffff';
-      
-      const onMainButtonClick = () => {
-        const form = document.querySelector('form');
-        if (form) form.requestSubmit();
-      };
-      
-      tg.MainButton.onClick(onMainButtonClick);
-
-      // Setup BackButton
-      const onBackButtonClick = () => {
-        setResult(null);
-        setError(null);
-        tg.BackButton.hide();
-        tg.MainButton.show();
-      };
-      tg.BackButton.onClick(onBackButtonClick);
-
-      return () => {
-        tg.MainButton.offClick(onMainButtonClick);
-        tg.BackButton.offClick(onBackButtonClick);
-      };
+      if (tg.MainButton) {
+        tg.MainButton.setText('НАЧАТЬ ПОИСК');
+        tg.MainButton.color = '#dc2626'; // red-600
+        tg.MainButton.textColor = '#ffffff';
+        
+        const onMainButtonClick = () => {
+          const form = document.querySelector('form');
+          if (form) form.requestSubmit();
+        };
+        
+        tg.MainButton.onClick(onMainButtonClick);
+        
+        // Setup BackButton
+        if (tg.BackButton) {
+          const onBackButtonClick = () => {
+            setResult(null);
+            setError(null);
+            tg.BackButton?.hide();
+            tg.MainButton?.show();
+          };
+          tg.BackButton.onClick(onBackButtonClick);
+          
+          return () => {
+            tg.MainButton?.offClick(onMainButtonClick);
+            tg.BackButton?.offClick(onBackButtonClick);
+          };
+        } else {
+          return () => {
+            tg.MainButton?.offClick(onMainButtonClick);
+          };
+        }
+      }
     }
   }, []);
 
@@ -152,11 +166,11 @@ export default function App() {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       if (result || error) {
-        tg.MainButton.hide();
-        tg.BackButton.show();
+        tg.MainButton?.hide();
+        tg.BackButton?.show();
       } else {
-        tg.MainButton.show();
-        tg.BackButton.hide();
+        tg.MainButton?.show();
+        tg.BackButton?.hide();
       }
     }
   }, [result, error]);
@@ -166,11 +180,11 @@ export default function App() {
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       if (isLoading) {
-        tg.MainButton.showProgress(false);
-        tg.MainButton.disable();
+        tg.MainButton?.showProgress(false);
+        tg.MainButton?.disable();
       } else {
-        tg.MainButton.hideProgress();
-        tg.MainButton.enable();
+        tg.MainButton?.hideProgress();
+        tg.MainButton?.enable();
       }
     }
   }, [isLoading]);
@@ -228,7 +242,7 @@ export default function App() {
     setError(null);
   };
 
-  const performSearch = async (query: string, modelIndex: number): Promise<SearchResult> => {
+  const performSearch = async (ai: GoogleGenAI, query: string, modelIndex: number): Promise<SearchResult> => {
     const filterSchema: Schema = {
       type: Type.OBJECT,
       properties: {
@@ -303,7 +317,8 @@ export default function App() {
     while (currentModelIdx < MODELS.length && !success) {
       try {
         setActiveModelIndex(currentModelIdx);
-        const data = await performSearch(query, currentModelIdx);
+        const ai = getAI();
+        const data = await performSearch(ai, query, currentModelIdx);
         if (data.error) {
           setError(data.error);
           triggerHapticNotification('error');
