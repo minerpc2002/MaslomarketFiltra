@@ -49,7 +49,7 @@ declare global {
 const getAI = () => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('API ключ не найден. Пожалуйста, настройте GEMINI_API_KEY в переменных окружения Vercel.');
+    return null;
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -132,8 +132,8 @@ export default function App() {
         tg.MainButton.textColor = '#ffffff';
         
         const onMainButtonClick = () => {
-          const form = document.querySelector('form');
-          if (form) form.requestSubmit();
+          const btn = document.getElementById('main-submit-btn');
+          if (btn) btn.click();
         };
         
         tg.MainButton.onClick(onMainButtonClick);
@@ -305,6 +305,14 @@ export default function App() {
     setError(null);
     setResult(null);
 
+    const ai = getAI();
+    if (!ai) {
+      setError('КРИТИЧЕСКАЯ ОШИБКА: API ключ не найден. Пожалуйста, укажите GEMINI_API_KEY в настройках Vercel.');
+      setIsLoading(false);
+      triggerHapticNotification('error');
+      return;
+    }
+
     const query = searchMode === 'vin' 
       ? `VIN: ${vin}` 
       : searchMode === 'part_number'
@@ -317,7 +325,6 @@ export default function App() {
     while (currentModelIdx < MODELS.length && !success) {
       try {
         setActiveModelIndex(currentModelIdx);
-        const ai = getAI();
         const data = await performSearch(ai, query, currentModelIdx);
         if (data.error) {
           setError(data.error);
@@ -572,7 +579,7 @@ export default function App() {
                 </button>
               </div>
 
-              <form onSubmit={handleSearch} className="p-10 relative z-10">
+              <form id="main-search-form" onSubmit={handleSearch} className="p-10 relative z-10">
                 <AnimatePresence mode="wait">
                   {searchMode === 'vin' ? (
                     <motion.div 
@@ -636,6 +643,7 @@ export default function App() {
                 </AnimatePresence>
 
                 <motion.button
+                  id="main-submit-btn"
                   whileHover={{ scale: 1.02, boxShadow: '0 0 40px rgba(220,38,38,0.4)' }}
                   whileTap={{ scale: 0.98 }}
                   type="submit"
