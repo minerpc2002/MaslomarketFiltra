@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 import { Search, Car, Hash, AlertCircle, Loader2, Filter, Zap, ChevronRight, History, Trash2, Sparkles, ChevronDown, ShieldCheck, Star, Info, Settings, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -276,12 +276,12 @@ export default function App() {
 
     const response = await ai.models.generateContent({
       model: MODELS[modelIndex],
-      contents: `Ты эксперт ГОСТ по подбору автозапчастей. Найди OEM НОМЕРА и артикулы аналогов (VIC, MANN-FILTER, JS Asakashi, FILTRON) для: ${query}. 
+      contents: `Ты строгая база данных кросс-номеров автозапчастей. Твоя задача - найти OEM НОМЕРА и артикулы аналогов для: ${query}. 
       
       СТРОГИЙ АЛГОРИТМ ПОИСКА:
-      1. ПРИОРИТЕТ: Сначала проверь официальные каталоги VIC, MANN-FILTER и JS Asakashi. Это основные источники.
-      2. ВТОРИЧНО: Затем ищи аналоги по другим базам (например, FILTRON).
-      3. ВЕРИФИКАЦИЯ: ОБЯЗАТЕЛЬНО сверяй кросс-номера между брендами и OEM. Если VIC говорит один номер, а MANN другой для того же OEM - проверь еще раз. Не выдавай фильтр, если не уверен в кросс-номере на 100%.
+      1. ГЛАВНЫЙ ПРИОРИТЕТ: Сначала ищи точные совпадения ТОЛЬКО по официальным каталогам MANN-FILTER и VIC. Это твои основные источники истины.
+      2. ПОДКЛЮЧЕНИЕ ИИ: Только после того, как ты нашел номера в MANN и VIC, используй свои знания для поиска других аналогов (JS Asakashi, FILTRON).
+      3. ВЕРИФИКАЦИЯ: ОБЯЗАТЕЛЬНО сверяй кросс-номера. Если номер MANN или VIC не бьется с OEM - отбраковывай его. ЗАПРЕЩЕНО угадывать номера или выдавать "примерно подходящие".
       
       ПРАВИЛА ВЫВОДА: 
       1. Обязательно укажи OEM номер.
@@ -292,7 +292,7 @@ export default function App() {
         responseMimeType: 'application/json',
         responseSchema: responseSchema,
         temperature: 0.1,
-        tools: modelIndex === 0 ? [{ googleSearch: {} }] : [],
+        tools: modelIndex < 2 ? [{ googleSearch: {} }] : [],
       }
     });
 
@@ -757,30 +757,77 @@ const AutocompleteInput = ({
   id, label, value, onChange, options, placeholder 
 }: { 
   id: string, label: string, value: string, onChange: (val: string) => void, options: string[], placeholder: string 
-}) => (
-  <div className="relative">
-    <label htmlFor={id} className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
-      {label}
-    </label>
-    <div className="relative">
-      <input
-        key={`${id}-input`}
-        type="text"
-        id={id}
-        list={`${id}-list`}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-bold placeholder:text-slate-600"
-        autoComplete="off"
-      />
-      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filteredOptions, setFilteredOptions] = useState<string[]>([]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (value) {
+      setFilteredOptions(options.filter(opt => opt.toLowerCase().includes(value.toLowerCase())));
+    } else {
+      setFilteredOptions(options);
+    }
+  }, [value, options]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={wrapperRef}>
+      <label htmlFor={id} className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 ml-1">
+        {label}
+      </label>
+      <div className="relative">
+        <input
+          key={`${id}-input`}
+          type="text"
+          id={id}
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setIsOpen(true);
+          }}
+          onFocus={() => setIsOpen(true)}
+          placeholder={placeholder}
+          className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 focus:border-red-500/50 focus:bg-white/10 text-white outline-none transition-all font-bold placeholder:text-slate-600"
+          autoComplete="off"
+        />
+        <ChevronDown className={`absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+      <AnimatePresence>
+        {isOpen && filteredOptions.length > 0 && (
+          <motion.ul
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute z-50 w-full mt-2 max-h-60 overflow-y-auto bg-slate-800 border border-white/10 rounded-2xl shadow-2xl custom-scrollbar"
+          >
+            {filteredOptions.map((opt) => (
+              <li
+                key={opt}
+                className="px-6 py-3 hover:bg-red-600/20 cursor-pointer text-sm font-bold text-slate-300 hover:text-white transition-colors border-b border-white/5 last:border-0"
+                onClick={() => {
+                  onChange(opt);
+                  setIsOpen(false);
+                }}
+              >
+                {opt}
+              </li>
+            ))}
+          </motion.ul>
+        )}
+      </AnimatePresence>
     </div>
-    <datalist id={`${id}-list`}>
-      {options.map(opt => <option key={opt} value={opt} />)}
-    </datalist>
-  </div>
-);
+  );
+};
 
 const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => (
   <AnimatePresence>
