@@ -46,12 +46,16 @@ declare global {
   }
 }
 
-const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
+const getGeminiAI = () => {
+  const apiKey = (import.meta as any).env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return null;
   }
   return new GoogleGenAI({ apiKey });
+};
+
+const getOpenRouterKey = () => {
+  return (import.meta as any).env.VITE_OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY;
 };
 
 const MODELS = [
@@ -59,7 +63,8 @@ const MODELS = [
   'gemini-3.1-flash-preview',
   'gemini-3.1-flash-lite-preview',
   'gemini-3-flash-preview',
-  'gemini-2.5-flash'
+  'gemini-2.5-flash',
+  'openrouter/qwen/qwen3.6-plus:free'
 ];
 
 type FilterBrand = {
@@ -248,7 +253,7 @@ export default function App() {
     setError(null);
   };
 
-  const performSearch = async (ai: GoogleGenAI, query: string, modelId: string): Promise<SearchResult> => {
+  const performSearch = async (query: string, modelId: string): Promise<SearchResult> => {
     const filterSchema: Schema = {
       type: Type.OBJECT,
       properties: {
@@ -279,41 +284,81 @@ export default function App() {
       required: ["vehicle", "filters"]
     };
 
-    const response = await ai.models.generateContent({
-      model: modelId,
-      contents: `Ты строгая база данных кросс-номеров автозапчастей. Твоя задача - найти OEM НОМЕРА и артикулы аналогов для: ${query}. 
+    const supportsGoogleSearch = modelId === 'gemini-3.1-pro-preview' || modelId === 'gemini-3.1-flash-preview';
+
+    const prompt = `Ты строгая база данных кросс-номеров автозапчастей. Твоя задача - найти OEM НОМЕРА и артикулы аналогов для: ${query}. 
       
+      ВНИМАНИЕ: Твои знания могут быть устаревшими или неточными. Ты ОБЯЗАН использовать инструмент Google Search (если он доступен) для проверки кросс-номеров по официальным каталогам! ЗАПРЕЩЕНО выдавать номера просто из памяти, если ты не уверен на 100%.
+      Ищи информацию строго на сайтах:
+      - site:filtron.eu
+      - site:mann-filter.com
+      - site:jsfilter.jp
+
       СТРОГИЙ АЛГОРИТМ ПОИСКА ЗАВИСИТ ОТ РЕГИОНА АВТОМОБИЛЯ:
 
       ДЛЯ ЯПОНСКИХ АВТОМОБИЛЕЙ (Toyota, Honda, Nissan, Mazda, Subaru, Mitsubishi, Daihatsu, Lexus, Infiniti, Suzuki и др.):
-      1. БАЗОВЫЙ КАТАЛОГ: Ищи кросс-номера и аналоги в первую очередь опираясь на каталог JS ASAKASHI.
+      1. БАЗОВЫЙ КАТАЛОГ: Ищи кросс-номера и аналоги в первую очередь опираясь на каталог JS ASAKASHI (jsfilter.jp).
       2. АЛГОРИТМ: Найди OEM -> Найди номер JS Asakashi -> По номеру JS Asakashi подбирай остальные аналоги (VIC, MANN, FILTRON). Если номера JS Asakashi нет, попробуй найти по VIC или MANN, но обязательно проверь совместимость с OEM.
 
       ДЛЯ ЕВРОПЕЙСКИХ АВТОМОБИЛЕЙ (VW, Skoda, BMW, Mercedes, Audi, Renault, Peugeot и др.):
-      1. БАЗОВЫЙ КАТАЛОГ: За основу бери каталог MANN-FILTER.
+      1. БАЗОВЫЙ КАТАЛОГ: За основу бери каталог MANN-FILTER (mann-filter.com).
       2. АЛГОРИТМ: Найди OEM -> Найди номер MANN-FILTER -> По номеру MANN-FILTER ищи остальные аналоги (FILTRON, JS Asakashi и др.). Если номера MANN нет, попробуй другие каталоги, но проверь совместимость.
 
       ДЛЯ ОСТАЛЬНЫХ (Корея, Китай, США):
       Используй оба каталога (MANN и JS Asakashi) для кроссировки с OEM.
 
       ОБЩИЕ ПРАВИЛА ВЕРИФИКАЦИИ И ВЫВОДА:
-      - ОБЯЗАТЕЛЬНО сверяй все кросс-номера. ЗАПРЕЩЕНО угадывать номера, выдавать "примерно подходящие" или выдумывать артикулы. Если нет точного кросса - возвращай null.
+      - ОБЯЗАТЕЛЬНО сверяй все кросс-номера через поиск по официальным сайтам. ЗАПРЕЩЕНО угадывать номера, выдавать "примерно подходящие" или выдумывать артикулы. Если нет точного кросса - возвращай null.
       - Обязательно укажи OEM номер.
       - Если для одной компании есть несколько подходящих аналогов, перечисли их ВСЕ в массиве.
-      - Выдавай данные ТОЛЬКО если найден хотя бы один аналог. Если аналогов нет, верни null для этого типа фильтра.`,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: responseSchema,
-        temperature: 0.1,
-        tools: [{ googleSearch: {} }],
-      }
-    });
+      - Выдавай данные ТОЛЬКО если найден хотя бы один аналог. Если аналогов нет, верни null для этого типа фильтра.
+      - ОТВЕТ ДОЛЖЕН БЫТЬ СТРОГО В ФОРМАТЕ JSON. Никакого лишнего текста.`;
 
-    if (!response.text) throw new Error('Empty response');
-    
-    let jsonStr = response.text.trim();
+    let jsonStr = '';
+
+    if (modelId.startsWith('openrouter/')) {
+      const orKey = getOpenRouterKey();
+      if (!orKey) throw new Error('OpenRouter API key not found');
+      
+      const orModel = modelId.replace('openrouter/', '');
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${orKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: orModel,
+          messages: [{ role: 'user', content: prompt }],
+          response_format: { type: 'json_object' }
+        })
+      });
+      
+      if (!res.ok) throw new Error(`OpenRouter API error: ${res.statusText}`);
+      const data = await res.json();
+      jsonStr = data.choices[0].message.content;
+    } else {
+      const ai = getGeminiAI();
+      if (!ai) throw new Error('Gemini API key not found');
+
+      const response = await ai.models.generateContent({
+        model: modelId,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: responseSchema,
+          temperature: 0.1,
+          tools: supportsGoogleSearch ? [{ googleSearch: {} }] : [],
+        }
+      });
+      if (!response.text) throw new Error('Empty response');
+      jsonStr = response.text.trim();
+    }
+
     if (jsonStr.startsWith('```json')) {
       jsonStr = jsonStr.replace(/^```json/, '').replace(/```$/, '').trim();
+    } else if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '').trim();
     }
     
     const data = JSON.parse(jsonStr);
@@ -326,9 +371,11 @@ export default function App() {
     setError(null);
     setResult(null);
 
-    const ai = getAI();
-    if (!ai) {
-      setError('КРИТИЧЕСКАЯ ОШИБКА: API ключ не найден. Пожалуйста, укажите GEMINI_API_KEY в настройках Vercel.');
+    const geminiKey = getGeminiAI();
+    const orKey = getOpenRouterKey();
+    
+    if (!geminiKey && !orKey) {
+      setError('КРИТИЧЕСКАЯ ОШИБКА: API ключи не найдены. Укажите VITE_GEMINI_API_KEY или VITE_OPENROUTER_API_KEY в настройках Vercel и сделайте Redeploy.');
       setIsLoading(false);
       triggerHapticNotification('error');
       return;
@@ -346,7 +393,7 @@ export default function App() {
     while (currentModelIdx < MODELS.length && !success) {
       try {
         setActiveModelIndex(currentModelIdx);
-        const data = await performSearch(ai, query, MODELS[currentModelIdx]);
+        const data = await performSearch(query, MODELS[currentModelIdx]);
         if (data.error) {
           setError(data.error);
           triggerHapticNotification('error');
