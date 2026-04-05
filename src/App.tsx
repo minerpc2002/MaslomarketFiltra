@@ -291,6 +291,13 @@ export default function App() {
       ВНИМАНИЕ: Твои знания могут быть устаревшими или неточными. Ты ОБЯЗАН использовать инструмент Google Search (если он доступен) для проверки кросс-номеров по официальным каталогам! ЗАПРЕЩЕНО выдавать номера просто из памяти, если ты не уверен на 100%.
       
       СТРОГИЙ АЛГОРИТМ ПОИСКА (ПРИОРИТЕТ ASAKASHI):
+      Ты ОБЯЗАН найти информацию для ВСЕХ четырех типов фильтров. НЕ ОСТАНАВЛИВАЙСЯ на первом найденном. Если информация по какому-то фильтру отсутствует, укажи это явно (null), но продолжай поиск остальных.
+      1. МАСЛЯНЫЙ ФИЛЬТР (Oil Filter)
+      2. ВОЗДУШНЫЙ ФИЛЬТР (Air Filter)
+      3. САЛОННЫЙ ФИЛЬТР (Cabin Filter)
+      4. ТОПЛИВНЫЙ ФИЛЬТР (Fuel Filter)
+
+      ДЛЯ КАЖДОГО ТИПА ФИЛЬТРА:
       1. ПЕРВИЧНЫЙ ПОИСК (OEM): Используй каталог JS ASAKASHI (jsfilter.jp) для определения точных OEM номеров запчастей для данного автомобиля/запроса.
       2. КРОСС-НОМЕРА: После того как найден OEM номер через JS Asakashi, найди соответствующие ему аналоги в каталогах:
          - MANN-FILTER (mann-filter.com)
@@ -307,7 +314,7 @@ export default function App() {
       - ОБЯЗАТЕЛЬНО сверяй все кросс-номера через поиск по официальным сайтам. ЗАПРЕЩЕНО угадывать номера, выдавать "примерно подходящие" или выдумывать артикулы. Если нет точного кросса - возвращай null.
       - Обязательно укажи OEM номер, найденный в каталоге JS Asakashi.
       - Если для одной компании есть несколько подходящих аналогов, перечисли их ВСЕ в массиве.
-      - Выдавай данные ТОЛЬКО если найден хотя бы один аналог. Если аналогов нет, верни null для этого типа фильтра.
+      - Выдавай данные ТОЛЬКО если найден хотя бы один аналог или OEM. Если данных нет совсем, верни null для этого типа фильтра.
       - ОТВЕТ ДОЛЖЕН БЫТЬ СТРОГО В ФОРМАТЕ JSON. Никакого лишнего текста.`;
 
     let jsonStr = '';
@@ -774,8 +781,8 @@ export default function App() {
 
 const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }) => {
   if (!data) return null;
-  const hasAnalogs = data.mann || data.vic || data.filtron || data.js_asakashi;
-  if (!hasAnalogs) return null;
+  const hasData = data.oem || data.mann || data.vic || data.filtron || data.js_asakashi;
+  if (!hasData) return null;
 
   return (
     <motion.div 
@@ -818,6 +825,11 @@ const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }
               </div>
             </div>
           ))}
+          {!data.mann?.length && !data.vic?.length && !data.filtron?.length && !data.js_asakashi?.length && (
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 text-center">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Аналоги не найдены</span>
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
