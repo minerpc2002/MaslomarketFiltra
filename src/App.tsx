@@ -59,12 +59,12 @@ const getOpenRouterKey = () => {
 };
 
 const MODELS = [
+  'openrouter/qwen/qwen3.6-plus:free',
   'gemini-3.1-pro-preview',
   'gemini-3.1-flash-preview',
   'gemini-3.1-flash-lite-preview',
   'gemini-3-flash-preview',
-  'gemini-2.5-flash',
-  'openrouter/qwen/qwen3.6-plus:free'
+  'gemini-2.5-flash'
 ];
 
 type FilterBrand = {
