@@ -257,18 +257,18 @@ export default function App() {
     const filterSchema: Schema = {
       type: Type.OBJECT,
       properties: {
-        oem: { type: Type.STRING, description: "Оригинальный OEM номер запчасти" },
-        mann: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов MANN-FILTER" },
-        vic: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов VIC" },
-        filtron: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов FILTRON" },
-        js_asakashi: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов JS Asakashi" }
-      },
-      required: ["oem"]
+        oem: { type: Type.STRING, description: "Оригинальный OEM номер запчасти. Если не найден, верни пустую строку." },
+        mann: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов MANN-FILTER. Если нет, пустой массив." },
+        vic: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов VIC. Если нет, пустой массив." },
+        filtron: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов FILTRON. Если нет, пустой массив." },
+        js_asakashi: { type: Type.ARRAY, items: { type: Type.STRING }, description: "Список артикулов JS Asakashi. Если нет, пустой массив." }
+      }
     };
 
     const responseSchema: Schema = {
       type: Type.OBJECT,
       properties: {
+        reasoning: { type: Type.STRING, description: "Опиши пошагово, как ты искал КАЖДЫЙ из 4 фильтров (масляный, воздушный, салонный, топливный). Это поле обязательно для заполнения." },
         vehicle: { type: Type.STRING },
         filters: {
           type: Type.OBJECT,
@@ -277,11 +277,12 @@ export default function App() {
             air: filterSchema,
             cabin: filterSchema,
             fuel: filterSchema
-          }
+          },
+          required: ["oil", "air", "cabin", "fuel"]
         },
         error: { type: Type.STRING }
       },
-      required: ["vehicle", "filters"]
+      required: ["reasoning", "vehicle", "filters"]
     };
 
     const supportsGoogleSearch = modelId === 'gemini-3.1-pro-preview' || modelId === 'gemini-3.1-flash-preview';
@@ -291,13 +292,13 @@ export default function App() {
       ВНИМАНИЕ: Твои знания могут быть устаревшими или неточными. Ты ОБЯЗАН использовать инструмент Google Search (если он доступен) для проверки кросс-номеров по официальным каталогам! ЗАПРЕЩЕНО выдавать номера просто из памяти, если ты не уверен на 100%.
       
       СТРОГИЙ АЛГОРИТМ ПОИСКА (ПРИОРИТЕТ ASAKASHI):
-      Ты ОБЯЗАН найти информацию для ВСЕХ четырех типов фильтров. НЕ ОСТАНАВЛИВАЙСЯ на первом найденном. Если информация по какому-то фильтру отсутствует, укажи это явно (null), но продолжай поиск остальных.
-      1. МАСЛЯНЫЙ ФИЛЬТР (Oil Filter)
-      2. ВОЗДУШНЫЙ ФИЛЬТР (Air Filter)
-      3. САЛОННЫЙ ФИЛЬТР (Cabin Filter)
-      4. ТОПЛИВНЫЙ ФИЛЬТР (Fuel Filter)
+      Ты ОБЯЗАН выполнить поиск для КАЖДОГО из 4 типов фильтров по очереди. Опиши свой процесс в поле "reasoning".
+      ШАГ 1: Найди МАСЛЯНЫЙ ФИЛЬТР (Oil Filter).
+      ШАГ 2: Найди ВОЗДУШНЫЙ ФИЛЬТР (Air Filter).
+      ШАГ 3: Найди САЛОННЫЙ ФИЛЬТР (Cabin Filter).
+      ШАГ 4: Найди ТОПЛИВНЫЙ ФИЛЬТР (Fuel Filter).
 
-      ДЛЯ КАЖДОГО ТИПА ФИЛЬТРА:
+      ДЛЯ КАЖДОГО ШАГА (ДЛЯ КАЖДОГО ФИЛЬТРА):
       1. ПЕРВИЧНЫЙ ПОИСК (OEM): Используй каталог JS ASAKASHI (jsfilter.jp) для определения точных OEM номеров запчастей для данного автомобиля/запроса.
       2. КРОСС-НОМЕРА: После того как найден OEM номер через JS Asakashi, найди соответствующие ему аналоги в каталогах:
          - MANN-FILTER (mann-filter.com)
@@ -311,10 +312,10 @@ export default function App() {
       - site:vic-filter.com
 
       ОБЩИЕ ПРАВИЛА ВЕРИФИКАЦИИ И ВЫВОДА:
-      - ОБЯЗАТЕЛЬНО сверяй все кросс-номера через поиск по официальным сайтам. ЗАПРЕЩЕНО угадывать номера, выдавать "примерно подходящие" или выдумывать артикулы. Если нет точного кросса - возвращай null.
-      - Обязательно укажи OEM номер, найденный в каталоге JS Asakashi.
+      - ОБЯЗАТЕЛЬНО сверяй все кросс-номера через поиск по официальным сайтам. ЗАПРЕЩЕНО угадывать номера, выдавать "примерно подходящие" или выдумывать артикулы.
+      - Обязательно укажи OEM номер, найденный в каталоге JS Asakashi. Если не найден, укажи пустую строку "".
       - Если для одной компании есть несколько подходящих аналогов, перечисли их ВСЕ в массиве.
-      - Выдавай данные ТОЛЬКО если найден хотя бы один аналог или OEM. Если данных нет совсем, верни null для этого типа фильтра.
+      - Если данных нет совсем, верни пустую строку для OEM и пустые массивы для брендов.
       - ОТВЕТ ДОЛЖЕН БЫТЬ СТРОГО В ФОРМАТЕ JSON. Никакого лишнего текста.`;
 
     let jsonStr = '';
@@ -781,7 +782,7 @@ export default function App() {
 
 const FilterCard = ({ title, data }: { title: string, data: FilterBrand | null }) => {
   if (!data) return null;
-  const hasData = data.oem || data.mann || data.vic || data.filtron || data.js_asakashi;
+  const hasData = !!data.oem || (data.mann && data.mann.length > 0) || (data.vic && data.vic.length > 0) || (data.filtron && data.filtron.length > 0) || (data.js_asakashi && data.js_asakashi.length > 0);
   if (!hasData) return null;
 
   return (
